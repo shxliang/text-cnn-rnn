@@ -4,12 +4,19 @@ from bunch import Bunch
 from collections import OrderedDict
 
 
-def create_cnn_config_model(params, id_to_word):
+def create_cnn_config_model(params, id_to_word, id_to_cat):
+    """
+    创建TextCNN配置文件
+    :param params:
+    :param id_to_word:
+    :param id_to_cat:
+    :return:
+    """
     config_dict = OrderedDict()
 
     config_dict["embedding_dim"] = params.embedding_dim
     config_dict["seq_length"] = params.seq_length
-    config_dict["num_classes"] = params.num_classes
+    config_dict["num_classes"] = len(id_to_cat)
     config_dict["num_filters"] = params.num_filters
     config_dict["kernel_size"] = params.kernel_size
     config_dict["vocab_size"] = len(id_to_word)
@@ -28,18 +35,20 @@ def create_cnn_config_model(params, id_to_word):
     config_dict["val_dir"] = params.val_dir
     config_dict["test_dir"] = params.test_dir
     config_dict["save_dir"] = params.save_dir
+    config_dict["vocab_dir"] = params.vocab_dir
+    config_dict["category_dir"] = params.category_dir
 
     save_config(config_dict, params.config_file)
     config = Bunch(config_dict)
     return config
 
 
-def create_rnn_config_model(params, id_to_word):
+def create_rnn_config_model(params, id_to_word, id_to_cat):
     config_dict = OrderedDict()
 
     config_dict["embedding_dim"] = params.embedding_dim
     config_dict["seq_length"] = params.seq_length
-    config_dict["num_classes"] = params.num_classes
+    config_dict["num_classes"] = len(id_to_cat)
     config_dict["vocab_size"] = len(id_to_word)
     config_dict["num_layers"] = params.num_layers
     config_dict["hidden_dim"] = params.hidden_dim
@@ -58,6 +67,8 @@ def create_rnn_config_model(params, id_to_word):
     config_dict["val_dir"] = params.val_dir
     config_dict["test_dir"] = params.test_dir
     config_dict["save_dir"] = params.save_dir
+    config_dict["vocab_dir"] = params.vocab_dir
+    config_dict["category_dir"] = params.category_dir
 
     save_config(config_dict, params.config_file)
     config = Bunch(config_dict)

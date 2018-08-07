@@ -2,15 +2,20 @@ import tensorflow as tf
 import tensorflow.contrib.keras as kr
 
 from data_loaders.data_loader import read_vocab, read_category
-from models.cnn_model import TextCNN
 from utils.config_utils import load_config
 
 
-def evaluate_one():
-    id_to_word, word_to_id = read_vocab("data/cnews.vocab.txt")
-    id_to_cat, cat_to_id = read_category()
-    config = load_config("configs/cnn_config_file")
-    model = TextCNN(config)
+def evaluate_one(Model, config_file):
+    """
+    加载模型进行单条样本预测
+    :param Model:
+    :param config_file:
+    :return:
+    """
+    config = load_config(config_file)
+    id_to_word, word_to_id = read_vocab(config.vocab_dir)
+    id_to_cat, cat_to_id = read_category(config.category_dir)
+    model = Model(config)
 
     with tf.Session() as session:
         session.run(tf.global_variables_initializer())
@@ -25,7 +30,7 @@ def evaluate_one():
 
                 data = [word_to_id[x] if x in word_to_id else word_to_id["<UNK>"] for x in line]
                 pad_data = kr.preprocessing.sequence.pad_sequences([data], config.seq_length, padding="post",
-                                                                           truncating="post")
+                                                                   truncating="post")
                 print(pad_data)
                 feed_dict = {
                     model.input_x: pad_data,
@@ -36,7 +41,3 @@ def evaluate_one():
                 print("所属类别: {}".format(id_to_cat[y_pred_cls[0]]))
             except Exception as e:
                 print(e)
-
-
-if __name__ == "__main__":
-    evaluate_one()

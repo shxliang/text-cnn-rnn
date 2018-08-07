@@ -21,8 +21,7 @@ flags.DEFINE_boolean("train", True, "Whether train the model")
 # configurations for the model
 flags.DEFINE_integer("embedding_dim", 64, "词向量维度")
 flags.DEFINE_integer("seq_length", 200, "序列长度")
-flags.DEFINE_integer("num_classes", 4, "类别数")
-flags.DEFINE_integer("vocab_size", 10000, "词汇表大小")
+flags.DEFINE_integer("vocab_size", 5000, "词汇表大小")
 flags.DEFINE_integer("num_layers", 2, "隐藏层层数")
 flags.DEFINE_integer("hidden_dim", 128, "全连接层神经元")
 flags.DEFINE_string("rnn", "gru", "RNN Cell 类型")
@@ -38,10 +37,11 @@ flags.DEFINE_string("optimizer", "adam", "Optimizer for training")
 
 flags.DEFINE_string("tensorboard_dir", os.path.join("tensorboard", "textcnn"), "TensorBoard Direction")
 flags.DEFINE_string("config_file", os.path.join("configs", "rnn_config_file"), "模型配置文件")
-flags.DEFINE_string("train_dir", os.path.join("data", "yinsi_textcnn_train.txt"), "训练集路径")
-flags.DEFINE_string("val_dir", os.path.join("data", "yinsi_textcnn_test.txt"), "验证集路径")
-flags.DEFINE_string("test_dir", os.path.join("data", "yinsi_textcnn_test.txt"), "测试集路径")
-flags.DEFINE_string("vocab_dir", os.path.join("data", "yinsi_rnn_vocab.txt"), "词汇表路径")
+flags.DEFINE_string("train_dir", os.path.join("data", "train.txt"), "训练集路径")
+flags.DEFINE_string("val_dir", os.path.join("data", "train.txt"), "验证集路径")
+flags.DEFINE_string("test_dir", os.path.join("data", "train.txt"), "测试集路径")
+flags.DEFINE_string("vocab_dir", os.path.join("data", "vocab.txt"), "词汇表路径")
+flags.DEFINE_string("category_dir", os.path.join("data", "category.txt"), "类别表路径")
 flags.DEFINE_string("save_dir", os.path.join("checkpoints/textcnn", "best_validation"), "最佳验证结果保存路径")
 
 FLAGS = tf.app.flags.FLAGS
@@ -105,6 +105,6 @@ if __name__ == "__main__":
         main_train()
     else:
         main_test()
-        # evaluate_one()
+        evaluate_one(TextRNN, "configs/rnn_config_file")
 
     # save_rnn_for_java()
