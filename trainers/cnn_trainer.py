@@ -10,7 +10,7 @@ import numpy as np
 import tensorflow as tf
 from sklearn import metrics
 
-from data_loaders.cnews_loader import batch_iter, process_file
+from data_loaders.data_loader import batch_iter, process_file
 from utils.utils import get_time_dif
 
 

@@ -16,7 +16,9 @@ else:
 
 
 def native_word(word, encoding='utf-8'):
-    """如果在python2下面使用python3训练的模型，可考虑调用此函数转化一下字符编码"""
+    """
+    如果在python2下面使用python3训练的模型，可考虑调用此函数转化一下字符编码
+    """
     if not is_py3:
         return word.encode(encoding)
     else:
@@ -48,8 +50,7 @@ def open_file(filename, mode='r'):
 
 def read_file(filename):
     """
-    读取cnews文件数据
-    数据label和content以制表符分隔
+    读取文件数据，数据label和content以\t分隔
     :param filename: 文件路径
     :return: 
         content: 存储正文的列表
@@ -70,7 +71,11 @@ def read_file(filename):
 
 def build_vocab(train_dir, vocab_dir, vocab_size=5000):
     """
-    根据训练集构建词汇表，存储
+    根据训练集构建词表并存储
+    :param train_dir: str，训练集路径
+    :param vocab_dir: str，词表路径
+    :param vocab_size: str，词表长度
+    :return:
     """
     train_data_content, _ = read_file(train_dir)
 
@@ -98,7 +103,6 @@ def read_vocab(vocab_dir):
         words: 读取的词表中的词
         word_to_id: key为词，value为index的词典
     """
-    # words = open_file(vocab_dir).read().strip().split('\n')
     with open_file(vocab_dir, "r") as fp:
         # 如果是py2 则每个值都转化为unicode
         words = [native_content(_.strip()) for _ in fp.readlines()]
@@ -107,38 +111,50 @@ def read_vocab(vocab_dir):
     return words, word_to_id
 
 
-def read_category():
+def build_category(train_dir, category_dir):
     """
-    读取分类目录，固定
+    根据训练数据创建类别表并存储
+    :param train_dir: str，训练集路径
+    :param category_dir: str，类别表路径
+    :return:
+    """
+    _, train_data_category = read_file(train_dir)
+    labels = list(set(train_data_category))
+    open_file(category_dir, mode='w').write('\n'.join(labels) + '\n')
+
+
+def read_category(category_dir):
+    """
+    读取类别表
     Returns:
         categories: 类别列表
         cat_to_id: key为类别，value为index的词典
     """
-
-    categories = ['体育', '财经', '房产', '家居', '教育', '科技', '时尚', '时政', '游戏', '娱乐']
-
-    # 二分类，识别是否为时政
-    # categories = ["其他", "时政"]
-
-    categories = [native_content(x) for x in categories]
-
+    with open_file(category_dir, "r") as fp:
+        # 如果是py2 则每个值都转化为unicode
+        categories = [native_content(_.strip()) for _ in fp.readlines()]
     cat_to_id = dict(zip(categories, range(len(categories))))
 
     return categories, cat_to_id
 
 
 def to_words(content, words):
-    """将id表示的内容转换为文字"""
+    """
+    将wordId表示的文本转化为word表示
+    :param content: str，以wordId表示的文本
+    :param words: list，id_to_word
+    :return:
+    """
     return ''.join(words[x] for x in content)
 
 
 def process_file(filename, word_to_id, cat_to_id, max_length=600):
     """
-    将文件转换为id表示
-    :param filename: 文件路径
-    :param word_to_id: key为词，value为index的词典
-    :param cat_to_id: key为类别，value为index的词典
-    :param max_length: 序列最大长度
+    将word表示的文本转化为wordId表示，并进行padding
+    :param filename: str，文件路径
+    :param word_to_id: dict，key为词，value为index的词典
+    :param cat_to_id: dict，key为类别，value为index的词典
+    :param max_length: int，序列最大长度
     :returns
         x_pad: padding/truncate后的词序列列表
         y_pad: 转换为one-hot编码后的类别列表
@@ -153,8 +169,6 @@ def process_file(filename, word_to_id, cat_to_id, max_length=600):
 
         # 将类别转化为类别id
         label_id.append(cat_to_id[labels[i]])
-        # 只分为时政和其他
-        # label_id.append(cat_to_id[labels[i]] if labels[i] == "时政" else cat_to_id["其他"])
 
     # 使用keras提供的pad_sequences来将文本pad为固定长度，以0来padding，所以字表中<PAD>的id需要为0
     x_pad = kr.preprocessing.sequence.pad_sequences(data_id, max_length, padding="post", truncating="post")
@@ -167,10 +181,14 @@ def process_file(filename, word_to_id, cat_to_id, max_length=600):
 def batch_iter(x, y, batch_size=64):
     """
     生成batch数据
+    :param x:
+    :param y:
+    :param batch_size:
+    :return: batch迭代器
     """
     data_len = len(x)
     # 计算一个epoch有几个batch
-    num_batch = int((data_len - 1) / batch_size) + 1
+    num_batch = int((data_len - 1) // batch_size) + 1
 
     # 进行数据shuffle
     indices = np.random.permutation(np.arange(data_len))
@@ -178,6 +196,6 @@ def batch_iter(x, y, batch_size=64):
     y_shuffle = y[indices]
 
     for i in range(num_batch):
-        start_id = i * batch_size
-        end_id = min((i + 1) * batch_size, data_len)
+        start_id = int(i * batch_size)
+        end_id = int(min((i + 1) * batch_size, data_len))
         yield x_shuffle[start_id:end_id], y_shuffle[start_id:end_id]

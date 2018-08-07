@@ -7,7 +7,7 @@ import os
 import tensorflow as tf
 import tensorflow.contrib.keras as kr
 
-from data_loaders.cnews_loader import read_category, read_vocab
+from data_loaders.data_loader import read_category, read_vocab
 from models.cnn_model import TCNNConfig, TextCNN
 
 try:

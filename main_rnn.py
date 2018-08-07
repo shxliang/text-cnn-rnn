@@ -7,7 +7,7 @@ import os
 
 import tensorflow as tf
 
-from data_loaders.cnews_loader import read_vocab, read_category, build_vocab
+from data_loaders.data_loader import read_vocab, read_category, build_vocab, build_category
 from infers.evaluate_one import evaluate_one
 from models.rnn_model import TextRNN
 from trainers.cnn_trainer import train, test
@@ -20,8 +20,8 @@ flags.DEFINE_boolean("train", True, "Whether train the model")
 
 # configurations for the model
 flags.DEFINE_integer("embedding_dim", 64, "词向量维度")
-flags.DEFINE_integer("seq_length", 600, "序列长度")
-flags.DEFINE_integer("num_classes", 2, "类别数")
+flags.DEFINE_integer("seq_length", 200, "序列长度")
+flags.DEFINE_integer("num_classes", 4, "类别数")
 flags.DEFINE_integer("vocab_size", 10000, "词汇表大小")
 flags.DEFINE_integer("num_layers", 2, "隐藏层层数")
 flags.DEFINE_integer("hidden_dim", 128, "全连接层神经元")
@@ -30,18 +30,18 @@ flags.DEFINE_string("rnn", "gru", "RNN Cell 类型")
 # configurations for training
 flags.DEFINE_float("dropout_keep_prob", 0.5, "dropout保留比例")
 flags.DEFINE_float("learning_rate", 0.001, "学习率")
-flags.DEFINE_float("batch_size", 128, "每批训练大小")
-flags.DEFINE_integer("num_epochs", 10, "总迭代轮次")
-flags.DEFINE_integer("print_per_batch", 100, "每多少轮输出一次结果")
+flags.DEFINE_float("batch_size", 64, "每批训练大小")
+flags.DEFINE_integer("num_epochs", 100, "总迭代轮次")
+flags.DEFINE_integer("print_per_batch", 5, "每多少轮输出一次结果")
 flags.DEFINE_integer("save_per_batch", 10, "每多少轮存入tensorboard")
 flags.DEFINE_string("optimizer", "adam", "Optimizer for training")
 
 flags.DEFINE_string("tensorboard_dir", os.path.join("tensorboard", "textcnn"), "TensorBoard Direction")
 flags.DEFINE_string("config_file", os.path.join("configs", "rnn_config_file"), "模型配置文件")
-flags.DEFINE_string("train_dir", os.path.join("data", "cnews.train.txt"), "训练集路径")
-flags.DEFINE_string("val_dir", os.path.join("data", "cnews.val.txt"), "验证集路径")
-flags.DEFINE_string("test_dir", os.path.join("data", "cnews.train.txt"), "测试集路径")
-flags.DEFINE_string("vocab_dir", os.path.join("data", "cnews.vocab.txt"), "词汇表路径")
+flags.DEFINE_string("train_dir", os.path.join("data", "yinsi_textcnn_train.txt"), "训练集路径")
+flags.DEFINE_string("val_dir", os.path.join("data", "yinsi_textcnn_test.txt"), "验证集路径")
+flags.DEFINE_string("test_dir", os.path.join("data", "yinsi_textcnn_test.txt"), "测试集路径")
+flags.DEFINE_string("vocab_dir", os.path.join("data", "yinsi_rnn_vocab.txt"), "词汇表路径")
 flags.DEFINE_string("save_dir", os.path.join("checkpoints/textcnn", "best_validation"), "最佳验证结果保存路径")
 
 FLAGS = tf.app.flags.FLAGS
@@ -57,7 +57,9 @@ def main_train():
         build_vocab(FLAGS.train_dir, FLAGS.vocab_dir, FLAGS.vocab_size)
     id_to_word, word_to_id = read_vocab(FLAGS.vocab_dir)
 
-    id_to_cat, cat_to_id = read_category()
+    if not os.path.exists(FLAGS.category_dir):
+        build_category(FLAGS.train_dir, FLAGS.category_dir)
+    id_to_cat, cat_to_id = read_category(FLAGS.category_dir)
 
     if os.path.isfile(FLAGS.config_file):
         config = load_config(FLAGS.config_file)
@@ -71,7 +73,7 @@ def main_train():
 
 def main_test():
     id_to_word, word_to_id = read_vocab(FLAGS.vocab_dir)
-    id_to_cat, cat_to_id = read_category()
+    id_to_cat, cat_to_id = read_category(FLAGS.category_dir)
     config = load_config(FLAGS.config_file)
     model = TextRNN(config)
 

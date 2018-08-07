@@ -13,6 +13,9 @@ def clean(params):
     if os.path.isfile(params.vocab_dir):
         os.remove(params.vocab_dir)
 
+    if os.path.isfile(params.category_dir):
+        os.remove(params.category_dir)
+
     if os.path.isdir(params.save_dir):
         shutil.rmtree(params.save_dir)
 
