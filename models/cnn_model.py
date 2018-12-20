@@ -47,16 +47,6 @@ class TextCNN(object):
             # 预测类别
             self.y_pred_cls = tf.argmax(self.softmax, 1)
 
-            # 二分类，当正例比负例概率大于一定阈值时才判为正
-            # def true_f():
-            #     return 1
-            #
-            # def false_f():
-            #     return 0
-            #
-            # self.y_pred_cls = tf.cond(
-            #     tf.greater(tf.subtract(self.softmax[-1][1], self.softmax[-1][0]), tf.constant(0.4)), true_f, false_f)
-
         with tf.name_scope("optimize"):
             # 损失函数: 交叉熵
             cross_entropy = tf.nn.softmax_cross_entropy_with_logits(logits=self.logits, labels=self.input_y)

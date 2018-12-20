@@ -1,5 +1,5 @@
 # coding: utf-8
-
+import random
 import sys
 from collections import Counter
 from importlib import reload
@@ -120,6 +120,8 @@ def build_category(train_dir, category_dir):
     """
     _, train_data_category = read_file(train_dir)
     labels = list(set(train_data_category))
+    # 对类别表排序，保证类别ID一致
+    labels = sorted(labels)
     open_file(category_dir, mode='w').write('\n'.join(labels) + '\n')
 
 
@@ -160,6 +162,12 @@ def process_file(filename, word_to_id, cat_to_id, max_length=600):
         y_pad: 转换为one-hot编码后的类别列表
     """
     contents, labels = read_file(filename)
+
+    # 对数据shuffle
+    idx = list(range(len(contents)))
+    random.shuffle(idx)
+    contents = [contents[i] for i in idx]
+    labels = [labels[i] for i in idx]
 
     data_id, label_id = [], []
     for i in range(len(contents)):

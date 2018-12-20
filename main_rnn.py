@@ -10,7 +10,7 @@ import tensorflow as tf
 from data_loaders.data_loader import read_vocab, read_category, build_vocab, build_category
 from infers.evaluate_one import evaluate_one
 from models.rnn_model import TextRNN
-from trainers.cnn_trainer import train, test
+from trainers.rnn_trainer import train, test
 from utils.config_utils import load_config, create_rnn_config_model
 from utils.utils import clean, mkdir
 
@@ -19,8 +19,8 @@ flags.DEFINE_boolean("clean", True, "Whether clean train folder")
 flags.DEFINE_boolean("train", True, "Whether train the model")
 
 # configurations for the model
-flags.DEFINE_integer("embedding_dim", 64, "词向量维度")
-flags.DEFINE_integer("seq_length", 200, "序列长度")
+flags.DEFINE_integer("embedding_dim", 100, "词向量维度")
+flags.DEFINE_integer("seq_length", 128, "序列长度")
 flags.DEFINE_integer("vocab_size", 5000, "词汇表大小")
 flags.DEFINE_integer("num_layers", 2, "隐藏层层数")
 flags.DEFINE_integer("hidden_dim", 128, "全连接层神经元")
@@ -29,20 +29,24 @@ flags.DEFINE_string("rnn", "gru", "RNN Cell 类型")
 # configurations for training
 flags.DEFINE_float("dropout_keep_prob", 0.5, "dropout保留比例")
 flags.DEFINE_float("learning_rate", 0.001, "学习率")
-flags.DEFINE_float("batch_size", 64, "每批训练大小")
-flags.DEFINE_integer("num_epochs", 100, "总迭代轮次")
+flags.DEFINE_float("batch_size", 32, "每批训练大小")
+flags.DEFINE_integer("num_epochs", 10, "总迭代轮次")
 flags.DEFINE_integer("print_per_batch", 5, "每多少轮输出一次结果")
 flags.DEFINE_integer("save_per_batch", 10, "每多少轮存入tensorboard")
 flags.DEFINE_string("optimizer", "adam", "Optimizer for training")
 
-flags.DEFINE_string("tensorboard_dir", os.path.join("tensorboard", "textcnn"), "TensorBoard Direction")
-flags.DEFINE_string("config_file", os.path.join("configs", "rnn_config_file"), "模型配置文件")
-flags.DEFINE_string("train_dir", os.path.join("data", "train.txt"), "训练集路径")
-flags.DEFINE_string("val_dir", os.path.join("data", "train.txt"), "验证集路径")
-flags.DEFINE_string("test_dir", os.path.join("data", "train.txt"), "测试集路径")
-flags.DEFINE_string("vocab_dir", os.path.join("data", "vocab.txt"), "词汇表路径")
-flags.DEFINE_string("category_dir", os.path.join("data", "category.txt"), "类别表路径")
-flags.DEFINE_string("save_dir", os.path.join("checkpoints/textcnn", "best_validation"), "最佳验证结果保存路径")
+# configurations for resources
+DATA_DIR = "data/news_demo"
+OUTPUT_DIR = "outputs/textrnn/news_demo"
+flags.DEFINE_string("tensorboard_dir", os.path.join("tensorboard/textrnn", "news_demo"), "TensorBoard Direction")
+flags.DEFINE_string("train_dir", os.path.join(DATA_DIR, "train.tsv"), "训练集路径")
+flags.DEFINE_string("val_dir", os.path.join(DATA_DIR, "dev.tsv"), "验证集路径")
+flags.DEFINE_string("test_dir", os.path.join(DATA_DIR, "test.tsv"), "测试集路径")
+flags.DEFINE_string("output_dir", OUTPUT_DIR, "模型输出目录")
+flags.DEFINE_string("config_file", os.path.join(OUTPUT_DIR, "config.txt"), "模型配置文件")
+flags.DEFINE_string("save_dir", os.path.join(OUTPUT_DIR, "best_validation"), "最佳验证结果保存路径")
+flags.DEFINE_string("vocab_dir", os.path.join(OUTPUT_DIR, "vocab.txt"), "词汇表路径")
+flags.DEFINE_string("category_dir", os.path.join(OUTPUT_DIR, "category.txt"), "类别表路径")
 
 FLAGS = tf.app.flags.FLAGS
 assert 0 <= FLAGS.dropout_keep_prob < 1, "dropout rate between 0 and 1"
@@ -64,7 +68,7 @@ def main_train():
     if os.path.isfile(FLAGS.config_file):
         config = load_config(FLAGS.config_file)
     else:
-        config = create_rnn_config_model(FLAGS, id_to_word)
+        config = create_rnn_config_model(params=FLAGS, id_to_word=id_to_word, id_to_cat=id_to_cat)
 
     model = TextRNN(config)
 
@@ -101,10 +105,10 @@ if __name__ == "__main__":
     if FLAGS.train:
         if FLAGS.clean:
             clean(FLAGS)
-            mkdir()
+            mkdir(FLAGS)
         main_train()
     else:
         main_test()
-        evaluate_one(TextRNN, "configs/rnn_config_file")
+        # evaluate_one(TextRNN, FLAGS)
 
     # save_rnn_for_java()

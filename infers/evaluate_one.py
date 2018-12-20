@@ -5,14 +5,14 @@ from data_loaders.data_loader import read_vocab, read_category
 from utils.config_utils import load_config
 
 
-def evaluate_one(Model, config_file):
+def evaluate_one(Model, params):
     """
     加载模型进行单条样本预测
     :param Model:
     :param config_file:
     :return:
     """
-    config = load_config(config_file)
+    config = load_config(params.config_file)
     id_to_word, word_to_id = read_vocab(config.vocab_dir)
     id_to_cat, cat_to_id = read_category(config.category_dir)
     model = Model(config)
@@ -20,12 +20,12 @@ def evaluate_one(Model, config_file):
     with tf.Session() as session:
         session.run(tf.global_variables_initializer())
         saver = tf.train.Saver()
-        saver.restore(sess=session, save_path="checkpoints/textcnn/best_validation")  # 读取保存的模型
+        saver.restore(sess=session, save_path=params.save_dir)  # 读取保存的模型
 
         while True:
             try:
-                line = input("请输入测试文本: ")
-                if line == "exit":
+                line = input("请输入测试文本，输入 exit 可退出: ")
+                if line.lower() == "exit":
                     exit(0)
 
                 data = [word_to_id[x] if x in word_to_id else word_to_id["<UNK>"] for x in line]

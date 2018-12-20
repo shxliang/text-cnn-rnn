@@ -78,17 +78,21 @@ def train(model, config, word_to_id, cat_to_id):
 
     print('Training and evaluating...')
     start_time = time.time()
-    total_batch = 0  # 总批次
-    best_acc_val = 0.0  # 最佳验证集准确率
-    last_improved = 0  # 记录上一次提升时是第几个批次
-    require_improvement = 1000  # 如果超过1000个批次未提升，则提前结束训练
+    # 已运行的总批次
+    total_batch = 0
+    # 最佳验证集准确率
+    best_acc_val = 0.0
+    # 记录上一次提升时是第几个批次
+    last_improved = 0
+    # 如果超过1000个批次未提升，则提前结束训练
+    require_improvement = 1000
 
     flag = False
     for epoch in range(config.num_epochs):
         print('Epoch:', epoch + 1)
         batch_train = batch_iter(x_train, y_train, config.batch_size)
         for x_batch, y_batch in batch_train:
-            feed_dict = create_feed_dict(x_batch, y_batch, config.dropout_keep_prob)
+            feed_dict = create_feed_dict(model, x_batch, y_batch, config.dropout_keep_prob)
 
             if total_batch % config.save_per_batch == 0:
                 # 每多少轮次将训练结果写入tensorboard scalar
@@ -99,14 +103,14 @@ def train(model, config, word_to_id, cat_to_id):
                 # 每多少轮次输出在训练集和验证集上的性能
                 feed_dict[model.keep_prob] = 1.0
                 loss_train, acc_train = session.run([model.loss, model.acc], feed_dict=feed_dict)
-                loss_val, acc_val = evaluate(session, x_val, y_val)  # todo
+                loss_val, acc_val = evaluate(session, model, x_val, y_val)
 
                 if acc_val > best_acc_val:
                     # 保存最好结果
                     best_acc_val = acc_val
                     last_improved = total_batch
                     # 存储模型
-                    saver.save(sess=session, save_path=config.save_path)
+                    saver.save(sess=session, save_path=config.save_dir)
                     improved_str = '*'
                 else:
                     improved_str = ''
@@ -116,15 +120,15 @@ def train(model, config, word_to_id, cat_to_id):
                       + ' Val Loss: {3:>6.2}, Val Acc: {4:>7.2%}, Time: {5} {6}'
                 print(msg.format(total_batch, loss_train, acc_train, loss_val, acc_val, time_dif, improved_str))
 
-            session.run(model.optim, feed_dict=feed_dict)  # 运行优化
+            session.run(model.optim, feed_dict=feed_dict)
             total_batch += 1
 
             if total_batch - last_improved > require_improvement:
                 # 验证集正确率长期不提升，提前结束训练
                 print("No optimization for a long time, auto-stopping...")
                 flag = True
-                break  # 跳出循环
-        if flag:  # 同上
+                break
+        if flag:
             break
 
 
@@ -149,8 +153,10 @@ def test(model, config, word_to_id, cat_to_id, id_to_cat):
     num_batch = int((data_len - 1) / batch_size) + 1
 
     y_test_cls = np.argmax(y_test, 1)
-    y_pred_cls = np.zeros(shape=len(x_test), dtype=np.int32)  # 保存预测结果
-    for i in range(num_batch):  # 逐批次处理
+    # 用于保存预测结果
+    y_pred_cls = np.zeros(shape=len(x_test), dtype=np.int32)
+    # 逐批次处理
+    for i in range(num_batch):
         start_id = i * batch_size
         end_id = min((i + 1) * batch_size, data_len)
         feed_dict = {
@@ -159,12 +165,13 @@ def test(model, config, word_to_id, cat_to_id, id_to_cat):
         }
         y_pred_cls[start_id:end_id] = session.run(model.y_pred_cls, feed_dict=feed_dict)
 
-    # 评估
-    print("Precision, Recall and F1-Score...")
+    # PRF评估
+    print("PRF:")
     print(metrics.classification_report(y_test_cls, y_pred_cls, target_names=id_to_cat))
 
     # 混淆矩阵
-    print("Confusion Matrix...")
+    print("Confusion Matrix:")
+    print("Truth \ Prediction")
     cm = metrics.confusion_matrix(y_test_cls, y_pred_cls)
     print(cm)
 

@@ -73,19 +73,24 @@ def train(model, config, word_to_id, cat_to_id):
 
         print('Training and evaluating...')
         start_time = time.time()
-        total_batch = 0  # 已训练的总批次
-        best_acc_val = 0.0  # 最佳验证集准确率
-        last_improved = 0  # 记录上一次有提升是第几个批次
-        require_improvement = 1000  # 如果超过1000个批次未提升，提前结束训练
+        # 已训练的总批次
+        total_batch = 0
+        # 验证集上最高正确率
+        best_acc_val = 0.0
+        # 记录上一次有提升是第几个批次
+        last_improved = 0
+        # 如果超过require_improvement个批次未提升，则提前结束训练
+        require_improvement = 1000
 
-        flag = False
+        is_early_stop = False
         for epoch in range(config.num_epochs):
             print('Epoch:', epoch + 1)
             batch_train = batch_iter(x_train, y_train, config.batch_size)
             for x_batch, y_batch in batch_train:
                 feed_dict = create_feed_dict(model, x_batch, y_batch, config.dropout_keep_prob)
 
-                session.run(model.optim, feed_dict=feed_dict)  # 运行优化
+                # 运行优化
+                session.run(model.optim, feed_dict=feed_dict)
                 total_batch += 1
 
                 if total_batch % config.save_per_batch == 0:
@@ -116,10 +121,12 @@ def train(model, config, word_to_id, cat_to_id):
                 if total_batch - last_improved > require_improvement:
                     # 验证集正确率长期不提升，提前结束训练
                     print("No optimization for a long time, auto-stopping...")
-                    flag = True
-                    break  # 跳出循环
-            if flag:  # 同上
+                    is_early_stop = True
+                    break
+            if is_early_stop:
                 break
+
+        print("Best Val Acc: {0}".format(best_acc_val))
 
 
 def test(model, config, word_to_id, cat_to_id, id_to_cat):
@@ -130,7 +137,8 @@ def test(model, config, word_to_id, cat_to_id, id_to_cat):
     with tf.Session() as session:
         session.run(tf.global_variables_initializer())
         saver = tf.train.Saver()
-        saver.restore(sess=session, save_path=config.save_dir)  # 读取保存的模型
+        # 读取保存的模型
+        saver.restore(sess=session, save_path=config.save_dir)
 
         print('Testing...')
         loss_test, acc_test = evaluate(session, model, x_test, y_test)
@@ -142,9 +150,11 @@ def test(model, config, word_to_id, cat_to_id, id_to_cat):
         num_batch = int((data_len - 1) / batch_size) + 1
 
         y_test_cls = np.argmax(y_test, 1)
-        y_pred_cls = np.zeros(shape=len(x_test), dtype=np.int32)  # 保存预测结果
+        # 用于存储预测结果
+        y_pred_cls = np.zeros(shape=len(x_test), dtype=np.int32)
 
-        for i in range(num_batch):  # 逐批次处理
+        # 逐批次处理
+        for i in range(num_batch):
             start_id = i * batch_size
             end_id = min((i + 1) * batch_size, data_len)
             feed_dict = {
@@ -154,11 +164,12 @@ def test(model, config, word_to_id, cat_to_id, id_to_cat):
             y_pred_cls[start_id:end_id] = session.run(model.y_pred_cls, feed_dict=feed_dict)
 
         # 评估
-        print("Precision, Recall and F1-Score...")
+        print("PRF:")
         print(metrics.classification_report(y_test_cls, y_pred_cls, target_names=id_to_cat))
 
         # 混淆矩阵
-        print("Confusion Matrix...")
+        print("Confusion Matrix:")
+        print("Truth \ Prediction")
         cm = metrics.confusion_matrix(y_test_cls, y_pred_cls)
         print(cm)
 
